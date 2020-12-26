@@ -9,16 +9,21 @@ import com.vk.api.sdk.httpclient.HttpTransportClient;
 import com.vk.api.sdk.objects.messages.Message;
 import com.vk.api.sdk.queries.messages.MessagesGetLongPollHistoryQuery;
 
+
 import java.util.List;
 
 public class VKCore {
+    //Ключ доступа
+    private static final String ACCESS_TOKEN =
+            "5ac8c045a4e55ea97f93600ce34cb0908e92a99a1731692f7525eec22e5d51e2a62f5090ed378d112cc68";
+    //Id группы
+    private static final int GROUP_ID = 201383444;
+
     public VkApiClient vk;
     public GroupActor actor;
-    private static int ts; // Временная метка
-    private static int maxMsgId = -1; //Лимит id сообщений для GetLongPollHistoryResponse.getMessages().getItems()
+    private static int ts; //Временная метка
+    private static int maxMsgId = -1;
 
-    private static final String ACCESS_TOKEN = "" /*КЛЮЧ ДОСТУПА*/;
-    private static final int GROUP_ID = 0 /*ID ГРУППЫ*/;
 
     public VKCore() throws ClientException, ApiException {
         TransportClient transportClient = HttpTransportClient.getInstance();
@@ -28,22 +33,20 @@ public class VKCore {
     }
 
     public Message getMessage() throws ClientException, ApiException {
-        //https://github.com/VKCOM/vk-java-sdk/blob/master/sdk/src/main/java/com/vk/api/sdk/queries/messages/MessagesGetLongPollHistoryQuery.java
-        //Создает запрос для метода Messages.getLongPollHistory (https://vk.com/dev/messages.getLongPollHistory)
-        MessagesGetLongPollHistoryQuery eventsQuery = vk.messages()
-                .getLongPollHistory(actor)
-                .ts(ts);
-        if (maxMsgId > 0){
-            //Если значение maxMsgId было установлено (Больше изначального -1)
-            //Установить лимит id сообщений для GetLongPollHistoryResponse.getMessages().getItems()
+        MessagesGetLongPollHistoryQuery eventsQuery =
+                vk.messages()
+                        .getLongPollHistory(actor)
+                        .ts(ts);
+
+        if (maxMsgId > 0) {
             eventsQuery.maxMsgId(maxMsgId);
         }
-        List<Message> messages = eventsQuery
-                .execute()
+
+        List<Message> messages = eventsQuery.execute()
                 .getMessages()
                 .getItems();
 
-        if (!messages.isEmpty()){
+        if (!messages.isEmpty()) {
             try {
                 ts = getTs();
             } catch (ClientException e) {
@@ -51,14 +54,12 @@ public class VKCore {
             }
         }
 
-        //isOut() возвращает true, если сообщение исходит от бота
+        // isOut озвращает true если сообщение от чат бота
         if (!messages.isEmpty() && !messages.get(0).isOut()) {
-
             int messageId = messages.get(0).getId();
-            if (messageId > maxMsgId){
+            if (messageId > maxMsgId) {
                 maxMsgId = messageId;
             }
-
             return messages.get(0);
         }
         return null;
@@ -66,9 +67,8 @@ public class VKCore {
 
     private int getTs() throws ClientException, ApiException {
         return vk.messages()
-                .getLongPollServer(actor) //создает запрос для метода Messages.getLongPollServer
-                .execute() //возвращает LongpollParams
-                .getTs(); //возвращает номер последнего события, начиная с которого нужно получать данные
+                .getLongPollServer(actor) //задает запрос для метода Messages.getLongPollServer
+                .execute() // возвращает LongPollParams
+                .getTs(); // возвращает номер последнего события, начиная с которого нужно получить данные
     }
-
 }
